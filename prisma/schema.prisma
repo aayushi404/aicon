@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  conversations   Conversation[]
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@map("verification")
+}
+
+model Conversation{
+  id    String    @id   @default(uuid())
+  description   String
+  type    content_type    @default(ICON)
+  userId    String
+  user    User    @relation(fields: [userId], references: [id])
+  messages    Message[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Message{
+  id    String    @id   @default(uuid())
+  sender    message_sender   @default(USER)
+  content   String?
+  conversationId    String
+  conversation    Conversation    @relation(fields: [conversationId], references: [id])
+  Image   Image?
+  createdAt   DateTime    @default(now())
+}
+
+model Image{
+  id    String    @id   @default(uuid())
+  url   String    
+  type    content_type    @default(ICON)
+  messageId   String    @unique
+  message   Message   @relation(fields: [messageId], references: [id])
+  createdAt   DateTime    @default(now())
+}
+
+enum message_sender {
+  USER
+  AI
+}
+
+enum content_type {
+  ICON
+}
+
